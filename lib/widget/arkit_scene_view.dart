@@ -287,6 +287,19 @@ class ARKitController {
     _channel?.invokeMethod<void>('dispose');
   }
 
+  void startRecording() {
+    _channel.invokeMethod<void>('startRecording');
+  }
+
+  Future<String> stopRecording() async {
+    String url;
+    await _channel.invokeMethod<String>('stopRecording').then((url2) {
+      url = url2;
+    });
+
+    return url;
+  }
+
   Future<void> add(ARKitNode node, {String parentNodeName}) {
     assert(node != null);
     final params = _addParentNodeNameToParams(node.toMap(), parentNodeName);

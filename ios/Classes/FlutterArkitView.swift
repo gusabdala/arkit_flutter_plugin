@@ -1,5 +1,6 @@
 import Foundation
 import ARKit
+import SceneKitVideoRecorder
 
 class FlutterArkitView: NSObject, FlutterPlatformView {
     let sceneView: ARSCNView
@@ -7,6 +8,7 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
     
     var forceTapOnCenter: Bool = false
     var configuration: ARConfiguration? = nil
+    var recorder: SceneKitVideoRecorder?
     
     init(withFrame frame: CGRect, viewIdentifier viewId: Int64, messenger msg: FlutterBinaryMessenger) {
         self.sceneView = ARSCNView(frame: frame)
@@ -16,6 +18,16 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
         
         self.sceneView.delegate = self
         self.channel.setMethodCallHandler(self.onMethodCalled)
+        
+        
+        /*if recorder == nil {
+            var options = SceneKitVideoRecorder.Options.default
+
+            let scale = UIScreen.main.nativeScale
+            let sceneSize = sceneView.bounds.size
+            options.videoSize = CGSize(width: sceneSize.width * scale, height: sceneSize.height * scale)
+            recorder = try! SceneKitVideoRecorder(withARSCNView: self.sceneView, options: options)
+        }*/
     }
     
     func view() -> UIView { return sceneView }
@@ -102,12 +114,54 @@ class FlutterArkitView: NSObject, FlutterPlatformView {
             onDispose(result)
             result(nil)
             break
+        case "startRecording":
+            startRecording()
+            result(nil)
+            break;
+        case "stopRecording":
+            stopRecording(result)
+            result(nil)
+            break;
         default:
             result(FlutterMethodNotImplemented)
             break
         }
         
     }
+    
+    func startRecording () {
+        
+    if recorder == nil {
+        var options = SceneKitVideoRecorder.Options.default
+
+        let scale = UIScreen.main.nativeScale
+        let sceneSize = sceneView.bounds.size
+        options.videoSize = CGSize(width: sceneSize.width * scale, height: sceneSize.height * scale)
+        recorder = try! SceneKitVideoRecorder(withARSCNView: self.sceneView, options: options)
+    }
+      self.recorder?.startWriting().onSuccess {
+        print("Recording Started")
+      }
+    }
+
+    func stopRecording (_ result:FlutterResult) {
+    
+        let semaphore = DispatchSemaphore(value:0);
+        let queue = DispatchQueue.global()
+        var urlString = "";
+        queue.async {
+            
+            self.recorder?.finishWriting().onSuccess { [weak self] url in
+                urlString = url.absoluteString
+                semaphore.signal()
+            }
+            
+        }
+        let _ = semaphore.wait(timeout: .now() + 10.0)
+        
+        result(urlString)
+      }
+    
     
     func onDispose(_ result:FlutterResult) {
         sceneView.session.pause()

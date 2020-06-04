@@ -24,13 +24,41 @@ class _FaceDetectionPageState extends State<FaceDetectionPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Face Detection Sample')),
-        body: Container(
-          child: ARKitSceneView(
-            configuration: ARKitConfiguration.faceTracking,
-            onARKitViewCreated: onARKitViewCreated,
-          ),
-        ),
+        body: Container(child: getMain()),
       );
+
+  Widget getMain() {
+    return Stack(
+      children: <Widget>[
+        ARKitSceneView(
+          configuration: ARKitConfiguration.faceTracking,
+          onARKitViewCreated: onARKitViewCreated,
+        ),
+        getButtons()
+      ],
+    );
+  }
+
+  Widget getButtons() {
+    return Row(
+      children: <Widget>[
+        FlatButton(
+          child: Text("Start"),
+          onPressed: () {
+            arkitController.startRecording();
+          },
+        ),
+        FlatButton(
+          child: Text("Stop"),
+          onPressed: () async {
+            await arkitController.stopRecording().then((String url) {
+              print(url);
+            });
+          },
+        )
+      ],
+    );
+  }
 
   void onARKitViewCreated(ARKitController arkitController) {
     this.arkitController = arkitController;
